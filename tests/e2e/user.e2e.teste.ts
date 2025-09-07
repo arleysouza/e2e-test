@@ -57,9 +57,7 @@ describe("E2E - Fluxo de usuários", () => {
     });
     const token = login.body.data.token;
 
-    const res = await request(app)
-      .post("/users/logout")
-      .set("Authorization", `Bearer ${token}`);
+    const res = await request(app).post("/users/logout").set("Authorization", `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
