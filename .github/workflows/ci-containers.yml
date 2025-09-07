@@ -46,6 +46,9 @@ jobs:
           name: coverage-report
           path: coverage
 
+      - name: Rodar testes E2E
+        run: docker compose -f docker-compose.yml --profile test run --rm node-test npm run test:e2e
+
       - name: Derrubar containers
         if: always()
         run: docker compose -f docker-compose.yml --profile test down
