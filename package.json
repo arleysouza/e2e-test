@@ -13,7 +13,7 @@
     "test:up": "docker compose --profile test up -d",
     "test:stop": "docker compose --profile test down",
     "test": "npm run test:up && docker compose exec node-test npm run test:ci && npm run test:stop",
-    "test:ci": "cross-env NODE_ENV=ci jest --coverage --detectOpenHandles --forceExit"
+    "test:ci": "jest --coverage --detectOpenHandles --forceExit"
   },
   "license": "MIT",
   "type": "commonjs",
