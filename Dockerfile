@@ -12,8 +12,8 @@ RUN npm ci
 # Copia o restante do código
 COPY . .
 
-# Compila a aplicação
-RUN npm run build
+# Compila a aplicação (gera dist/)
+RUN npm run build 
 
 # Expõe a porta padrão do Express
 EXPOSE 3000

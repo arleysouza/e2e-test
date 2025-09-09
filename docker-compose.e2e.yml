@@ -1,0 +1,53 @@
+services:
+  postgres-e2e:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: bdaula
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    volumes:
+      - ./src/configs/comandos.sql:/docker-entrypoint-initdb.d/comandos.sql:ro
+    networks:
+      - e2e-network
+
+  redis-e2e:
+    image: redis:8-alpine
+    command: redis-server --requirepass 123
+    ports:
+      - "6379:6379"
+    networks:
+      - e2e-network
+
+  node-e2e:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3000"
+    env_file:
+      - .env.e2e
+    depends_on:
+      - postgres-e2e
+      - redis-e2e
+    networks:
+      - e2e-network
+
+  node-e2e-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.e2e.test
+    depends_on:
+      - node-e2e
+    networks:
+      - e2e-network
+    volumes:
+      - ./coverage:/app/coverage
+    command: sh -c "npx wait-on http://node-e2e:3000/health && npm run test:e2e"
+
+networks:
+  e2e-network:
+    driver: bridge

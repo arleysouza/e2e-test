@@ -22,6 +22,11 @@ app.use(express.urlencoded({ extended: true }));
 // Middleware para cookies
 app.use(cookieParser());
 
+// Rota de healthcheck para o Docker
+app.get("/health", (_req: Request, res: Response) => {
+  res.status(200).json({ status: "ok" });
+});
+
 // Rotas principais
 app.use("/", router);
 

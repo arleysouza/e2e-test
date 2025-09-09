@@ -22,33 +22,46 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Lint e Prettier antes dos testes
+      # Lint e Prettier fora dos containers (mais rápido)
+      - name: Instalar dependências para lint e build
+        run: npm ci
+
       - name: Rodar o Linter
-        run: docker compose -f docker-compose.yml --profile test run --rm node-test npm run lint
+        run: npm run lint
 
       - name: Verificar formatação (Prettier)
-        run: docker compose -f docker-compose.yml --profile test run --rm node-test npm run format:check
+        run: npm run format:check
 
       - name: Compilar o código TypeScript
-        run: docker compose -f docker-compose.yml --profile test run --rm node-test npm run build
+        run: npm run build
 
-      # Build + Testes
-      - name: Build containers
-        run: docker compose -f docker-compose.yml --profile test build
+      # Testes de integração
+      - name: Rodar testes de integração (docker-compose.test.yml)
+        run: |
+          docker compose -f docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from node-test
 
-      - name: Subir containers e rodar testes
-        run: docker compose -f docker-compose.yml --profile test up --abort-on-container-exit --exit-code-from node-test
-
-      - name: Upload coverage report
+      - name: Upload coverage report (integração)
         if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
+          name: coverage-integration
           path: coverage
 
-      #- name: Rodar testes E2E
-      #  run: docker compose -f docker-compose.yml --profile test run --rm node-test npm run test:e2e
+      # Testes E2E
+      - name: Rodar testes E2E (docker-compose.e2e.yml)
+        run: |
+          docker compose -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from node-e2e-test
 
-      - name: Derrubar containers
+      - name: Upload coverage report (E2E)
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-e2e
+          path: coverage
+
+            # Derrubar containers (garantia)
+      - name: Derrubar containers de teste
         if: always()
-        run: docker compose -f docker-compose.yml --profile test down
+        run: |
+          docker compose -f docker-compose.test.yml down -v || true
+          docker compose -f docker-compose.e2e.yml down -v || true

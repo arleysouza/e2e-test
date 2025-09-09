@@ -1,0 +1,38 @@
+services:
+  postgres-test:
+    image: postgres:17-alpine
+    container_name: postgres-test
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: bdaula
+    tmpfs:
+      - /var/lib/postgresql/data
+    volumes:
+      - ./src/configs/comandos.sql:/docker-entrypoint-initdb.d/comandos.sql:ro
+    networks:
+      - test-network
+
+  redis-test:
+    image: redis:8-alpine
+    container_name: redis-test
+    restart: always
+    networks:
+      - test-network
+
+  node-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: node-test
+    depends_on:
+      - postgres-test
+      - redis-test
+    networks:
+      - test-network
+    volumes:
+      - ./coverage:/app/coverage
+
+networks:
+  test-network:
+    driver: bridge
