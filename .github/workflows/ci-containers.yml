@@ -57,7 +57,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-e2e
-          path: coverage
+          path:
+            coverage
 
             # Derrubar containers (garantia)
       - name: Derrubar containers de teste
