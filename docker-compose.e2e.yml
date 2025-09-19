@@ -45,8 +45,8 @@ services:
     networks:
       - e2e-network
     ports:
-      - "3002:3000"                     # expõe para você acessar fora do compose, se quiser
-    command: sh -c "node dist/index.js" # ou adicione "start:prod" no package.json e chame npm run start:prod
+      - "3002:3000"                     
+    command: sh -c "node dist/index.js"
 
   node-e2e-test:
     build:

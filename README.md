@@ -1,6 +1,6 @@
-## Testes com Integração Contínua
+## Testes end-to-end no CI
 
-Este projeto demonstra o uso de Integração Contínua (CI) em uma aplicação Node.js/TypeScript com Express, incluindo:
+Este projeto demonstra o uso de testes unitários, testes de integração e testes end-to-end em uma aplicação Node.js/TypeScript com Express, incluindo:
 
 - Banco de dados PostgreSQL
 - Redis para blacklist de tokens
@@ -9,17 +9,31 @@ Este projeto demonstra o uso de Integração Contínua (CI) em uma aplicação N
 - Jest + Supertest para escrever e executar os testes automatizados
 - GitHub Actions para o pipeline de CI
 
+
 ---
+
+### Testes end-to-end
+
+Testes End-to-End validam um fluxo completo de negócio do ponto de vista do usuário (humano ou sistema externo), exercitando todas as camadas relevantes da aplicação: interface (UI ou API), backend, banco de dados, cache, fila, etc.
+A pergunta que um E2E responde é:
+*“Quando alguém usa o sistema para realizar X, o resultado ocorre como esperado?”*
+
+No nosso projeto (API Node.js/Express com PostgreSQL e Redis), um E2E típico seria:
+1. Registrar usuário (POST /users);
+2. Efetuar login (POST /users/login) e receber o JWT;
+3. Acessar rota protegida usando o JWT – mudar a própria senha (PATCH /users/password);
+4. Efetuar logout (POST /users/logout) e validar que o token foi blacklistado (Redis) e não funciona mais.
+Esses passos percorrem o sistema “de ponta a ponta”: desde a entrada HTTP até a persistência (Postgres) e a camada de segurança/estado (Redis).
+
 
 ### 📌 Objetivo
 
-- Mostrar boas práticas em testes de integração em aplicações web.
-- Isolar os testes em uma pasta dedicada (`tests/`).
-- Configurar Postgres e Redis de forma efêmera com Docker para os testes.
-- Validar fluxos de autenticação (login, logout, blacklist de tokens) de ponta a ponta;
-- Demonstrar duas estratégias de CI no GitHub Actions:
-  1. Runner + Services (mais simples, executa Node.js no runner e Postgres/Redis em containers);
-  2. Docker Compose (todo o ambiente roda em containers, garantindo paridade com o ambiente local).
+- Mostrar boas práticas em testes unitários, de integração e de ponta a ponta.
+- Isolar os testes em pastas dedicadas (tests/unit, tests/integrations, tests/e2e).
+- Configurar Postgres e Redis de forma efêmera com Docker para os testes de integração/E2E.
+- Validar fluxos de autenticação (login, logout, blacklist de tokens) de ponta a ponta.
+- Integrar o pipeline de testes ao GitHub Actions usando Docker Compose.
+
 
 ---
 
@@ -31,7 +45,8 @@ Este projeto demonstra o uso de Integração Contínua (CI) em uma aplicação N
 - Redis – armazenamento da blacklist de tokens JWT
 - Docker + Docker Compose – orquestração dos serviços de teste
 - Jest – framework de testes
-- Supertest – simulação de requisições HTTP para testes de integração
+- Supertest – simulação de requisições HTTP para testes de integração/E2E
+
 
 ---
 
@@ -41,35 +56,49 @@ Este projeto demonstra o uso de Integração Contínua (CI) em uma aplicação N
 app/
 ├── .github/
 │   └── workflows/
-│       ├── ci-containers.yml   # Pipeline usando Docker Compose
-│       └── ci-services.yml     # Pipeline usando runner + services
+│       └── ci.yml
 │
-├── src/                     # Código da aplicação
-│   ├── configs/             # Conexão com Postgres e Redis
-│   ├── controllers/         # Controllers (ex: user.controller.ts)
-│   ├── middlewares/         # Middlewares (auth, validação, erros)
-│   ├── routes/              # Rotas Express
-│   ├── types/               # Tipagem customizada
-│   ├── utils/               # Funções auxiliares (ex: JWT)
-│   └── index.ts             # Inicialização do servidor
+├── db/                     
+│   └── init.sql 
 │
-├── tests/                   # Casos de teste (isolados da aplicação)
-│   ├── controllers/         # Testes de controllers com Supertest
-│   ├── helpers/             # App de teste sem app.listen()
-│   └── jest.setup.ts        # Setup global (conexão e limpeza do BD/Redis)
+├── server/  
+│   ├── src/                     # Código da aplicação
+│   │   ├── configs/             # Conexão com Postgres e Redis
+│   │   ├── controllers/         # Controllers (ex: user.controller.ts)
+│   │   ├── middlewares/         # Middlewares (auth, validação, erros)
+│   │   ├── routes/              # Rotas Express
+│   │   ├── types/               # Tipagem customizada
+│   │   ├── utils/               # Funções auxiliares (ex: JWT)
+│   │   └── index.ts             # Inicialização do servidor
+│   └── tests/                   # Casos de teste (isolados da aplicação)
+│       ├── e2e/
+│       │   ├── api.e2e.test.ts
+│       │   ├── infra.e2e.test.ts
+│       │   └── user.e2e.test.ts 
+│       ├── integrations/
+│       │   ├── controllers/         # Testes de controllers com Supertest
+│       │   │   └── user.controller.test.ts
+│       │   └── helpers/             # App de teste sem app.listen()
+│       ├── unit/
+│       │   ├── controllers/ 
+│       │   │   └── user.controller.test.ts
+│       │   ├── middlewares/ 
+│       │   │   ├── authMiddleware.test.ts
+│       │   │   ├── errorHandler.test.ts
+│       │   │   └── validateBody.test.ts
+│       │   ├── utils/ 
+│       │   │   └── jwt.test.ts
+│       │   ├── controllers/ 
+│       ├── jest.setup.ts
+│       └── jest.unit.setup.ts
 │
-├── .env                     # Configuração local
-├── .env.test                # Para testes no host
-├── .env.ci.containers       # Para CI usando Docker Compose
-├── .env.ci.services         # Para CI usando runner + services
-├── docker-compose.test.yml  # Serviços de teste (Postgres/Redis)
-├── Dockerfile.test
-├── eslint.config.mjs
-├── jest.config.js           # Configuração do Jest
-├── package-lock.json
-├── package.json
-├── tsconfig.eslint.json
-└── tsconfig.json
+├── .dockerignore
+├── .env.e2e
+├── .env.production
+├── .env.test
+├── docker-compose.e2e.yml
+├── docker-compose.start.yml
+└── docker-compose.test.yml
 
 ```
 
@@ -77,146 +106,91 @@ app/
 
 ### ▶️ Execução Local
 
-1. Clonar o repositório e instalar dependências
+1. Clonar o repositório e instalar dependências:
 
 ```bash
-git clone https://github.com/arleysouza/ci-test.git app
+git clone https://github.com/arleysouza/e2e-test.git app
 cd app
-npm i
 ```
 
-2. Configurar PostgreSQL
-
-- Criar o banco `bdaula`;
-- Rodar os comandos SQL do arquivo `src/configs/comandos.sql`.
-
-4. Subir o Redis com Docker
-
+2. Subir containers para rodar a aplicação em modo de produção:
 ```bash
-docker run --name redis -p 6379:6379 -d redis:alpine redis-server --requirepass 123
+docker compose -f docker-compose.start.yml up --build -d
 ```
-
-ou
-
+Encerrar e remover containers:
 ```bash
-npm run redis-start
+docker compose -f docker-compose.start.yml down -v
 ```
-
-5. Iniciar o servidor
-
-```
-npm start
-npm run dev
-```
-
-O arquivo `/http/requests.http` contém as requisições da aplicação (login, registro, logout, CRUD de contatos).
+O arquivo `/http/requests.http` contém as requisições da aplicação (login, registro, logout, change password).
 Para executá-las diretamente no VSCode, instale a extensão:
 👉 REST Client (autor: Huachao Mao)
-
 Após instalar, basta abrir o arquivo `requests.http`, clicar em `Send Request` sobre a requisição desejada, e o VSCode mostrará a resposta no editor.
 
-6. Executar testes localmente
-   Graças à configuração do `package.json`, o comando `npm run test` já cuida de todo o ciclo de testes:
-1. Sobe containers de PostgreSQL e Redis definidos em `docker-compose.test.yml`;
-1. Executa os testes com Jest + Supertest;
-1. Para os containers ao final;
-   Comando único para rodar tudo:
+3. Testar a API no VSCode:
 
+- O arquivo `/http/requests.http` contém requisições de exemplo.
+- Instale a extensão **REST Client (Huachao Mao)**.
+- Abra o arquivo, clique em `Send Request` e veja a resposta no editor.
+
+
+4. Rodar testes unitários:
 ```bash
-npm run test
+docker compose -f docker-compose.unit.yml up --build -d
 ```
+Encerrar e remover containers:
+```bash
+docker compose -f docker-compose.unit.yml down -v
+```
+
+
+5. Rodar testes de integração:
+```bash
+docker compose -f docker-compose.test.yml up --build -d
+```
+Encerrar e remover containers:
+```bash
+docker compose -f docker-compose.test.yml down -v
+```
+
+6. Rodar testes end-to-end:
+```bash
+docker compose -f docker-compose.e2e.yml up --build -d
+```
+Encerrar e remover containers:
+```bash
+docker compose -f docker-compose.e2e.yml down -v
+```
+
 
 ---
 
 ### 🚀 Execução no GitHub Actions
 
-O projeto oferece duas estratégias de CI.
+O pipeline definido em `.github/workflows/ci.yml` executa quatro jobs principais em paralelo/sequência:
 
-1. **Runner + Services** (arquivo `ci-services.yml`)
+1. **Lint & Prettier** – garante qualidade e formatação do código.
+2. **Build** – compila o TypeScript.
+3. **Unit Tests** – roda com `docker-compose.unit.yml`, usando apenas Node.js (sem Postgres/Redis).
+4. **Integration Tests** – roda com `docker-compose.test.yml`, usando Postgres e Redis efêmeros.
+5. **E2E Tests** – roda com `docker-compose.e2e.yml`, simulando fluxos completos de negócio.
 
-- O Node.js roda direto no runner (ubuntu-latest).
-- Postgres e Redis são declarados em `services:` e sobem em containers auxiliares.
-- O schema do banco é criado via `psql -f src/configs/comandos.sql`.
-- `NODE_ENV=ci.services` garante o carregamento das variáveis corretas.
+Cada etapa publica seu relatório de cobertura (`coverage/`) como artefato no GitHub Actions.
 
-2. **Docker Compose** (arquivo `ci-containers.yml`)
-
-- Todo o ambiente (Node.js, Postgres e Redis) sobe em containers.
-- O GitHub Actions apenas orquestra os comandos `docker compose build` e `docker compose up`.
-- Garante paridade total entre ambiente local e CI.
-- `NODE_ENV=ci.containers` é usado para carregar variáveis do `.env.ci.containers`.
-
-📌 Apenas um arquivo (`ci-services.yml` ou `ci-containers.yml`) deve estar ativo por vez. Renomeie o que não for usar (ex.: `ci-services.disabled`).
-
----
-
-### 🔑 Endpoints
-
-**Registro de usuário**
-
-```bash
-POST /users
-```
-
-**Login**
-
-```bash
-POST /users/login
-```
-
-Resposta (exemplo):
-
-```bash
-{ "token": "eyJhbG..." }
-```
-
-**Logout**
-
-```bash
-POST /users/logout
-```
-
-Invalida o token atual adicionando-o à blacklist no Redis.
-
----
-
-### 📊 Comparativo: Runner + Services vs Docker Compose
-
-| Critério                        | Runner + Services (`ci-services.yml`) | Docker Compose (`ci-containers.yml`)                               |
-| ------------------------------- | ------------------------------------- | ------------------------------------------------------------------ |
-| **Execução do Node.js**         | No runner (VM do GitHub)              | Em container isolado (`node-test`)                                 |
-| **Banco de dados e Redis**      | Declarados em `services:`             | Definidos no `docker-compose.test.yml`                             |
-| **Paridade com ambiente local** | Parcial (diferenças podem surgir)     | Total (mesma stack de containers)                                  |
-| **Complexidade**                | Mais simples                          | Mais completo e próximo do real                                    |
-| **Velocidade**                  | Geralmente mais rápido                | Um pouco mais lento (build de imagens)                             |
-| **Portabilidade**               | Menor (depende do runner)             | Maior (mesma config local/CI)                                      |
-| **Uso recomendado**             | Projetos simples, pipelines rápidos   | Projetos com stack mais complexa ou que exigem ambientes idênticos |
 
 ---
 
 ### 🔄 Fluxo de Execução do Pipeline
 
-**Runner + Services**
-
 ```mermaid
 flowchart TD
     A[Commit / Pull Request] --> B[GitHub Actions Runner]
-    B --> C[Instala Node.js e dependências]
-    B --> D[Services: PostgreSQL + Redis em containers]
-    C --> E[Rodar Linter e Build]
-    D --> F[Rodar Tests com Jest]
-    E --> F
-    F --> G[Upload Coverage Report]
+    B --> C[Job: Lint & Prettier]
+    B --> D[Job: Build]
+    D --> E[Job: Unit Tests]
+    D --> F[Job: Integration Tests]
+    D --> G[Job: E2E Tests]
+    E --> H[Upload Coverage Unit]
+    F --> I[Upload Coverage Integration]
+    G --> J[Upload Coverage E2E]
 ```
 
-**Docker Compose**
-
-```mermaid
-flowchart TD
-    A[Commit / Pull Request] --> B[GitHub Actions Runner]
-    B --> C[Docker Compose Build]
-    C --> D[Subir Containers: Node.js + Postgres + Redis]
-    D --> E[Container node-test executa Jest]
-    E --> F[Upload Coverage Report]
-    F --> G[Derrubar Containers]
-```
