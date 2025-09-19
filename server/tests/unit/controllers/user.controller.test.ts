@@ -1,4 +1,9 @@
-import { createUser, loginUser, logoutUser, changePassword } from "../../../src/controllers/user.controller";
+import {
+  createUser,
+  loginUser,
+  logoutUser,
+  changePassword,
+} from "../../../src/controllers/user.controller";
 import db from "../../../src/configs/db";
 import bcrypt from "bcrypt";
 import { generateToken } from "../../../src/utils/jwt";
@@ -10,7 +15,7 @@ jest.mock("../../../src/utils/jwt");
 jest.mock("../../../src/configs/redis");
 
 const mockReq = (body: any = {}, headers: any = {}, user: any = {}) =>
-  ({ body, headers, user } as any);
+  ({ body, headers, user }) as any;
 
 const mockRes = () => {
   const res: any = {};
@@ -31,7 +36,7 @@ describe("User Controller - createUser", () => {
 
     expect(db.query).toHaveBeenCalledWith(
       "INSERT INTO users (username, password) VALUES ($1, $2)",
-      ["teste", "hashedpwd"]
+      ["teste", "hashedpwd"],
     );
     expect(res.status).toHaveBeenCalledWith(201);
   });
@@ -65,7 +70,7 @@ describe("User Controller - loginUser", () => {
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ success: true, data: expect.any(Object) })
+      expect.objectContaining({ success: true, data: expect.any(Object) }),
     );
   });
 
@@ -100,7 +105,11 @@ describe("User Controller - logoutUser", () => {
     const fakeToken = "abc123";
     const fakeHash = "hash123";
 
-    const req = mockReq({}, { authorization: `Bearer ${fakeToken}` }, { exp: Math.floor(Date.now() / 1000) + 3600 });
+    const req = mockReq(
+      {},
+      { authorization: `Bearer ${fakeToken}` },
+      { exp: Math.floor(Date.now() / 1000) + 3600 },
+    );
     const res = mockRes();
 
     jest.spyOn(require("crypto"), "createHash").mockReturnValue({

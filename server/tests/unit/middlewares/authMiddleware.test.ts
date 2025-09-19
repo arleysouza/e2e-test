@@ -4,7 +4,7 @@ import redisClient from "../../../src/configs/redis";
 
 jest.mock("../../../src/configs/redis");
 
-const mockReq = (headers: any = {}) => ({ headers } as any);
+const mockReq = (headers: any = {}) => ({ headers }) as any;
 const mockRes = () => {
   const res: any = {};
   res.status = jest.fn().mockReturnValue(res);

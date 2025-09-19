@@ -43,7 +43,7 @@ describe("errorHandler middleware", () => {
         success: false,
         error: "Erro interno do servidor",
         details: "Falha simulada",
-      })
+      }),
     );
   });
 });

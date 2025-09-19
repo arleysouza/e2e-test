@@ -7,7 +7,6 @@ jest.mock("ioredis", () => {
   }));
 });
 
-
 beforeEach(() => {
   jest.clearAllMocks();
 });
