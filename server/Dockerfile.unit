@@ -6,7 +6,7 @@ WORKDIR /app
 # Copiar package.json e package-lock.json
 COPY package*.json ./
 
-# Instalar dependências
+# Instala as devDependencies se NODE_ENV não é production
 RUN npm ci
 
 # Copiar o restante do código

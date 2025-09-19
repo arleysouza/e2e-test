@@ -5,13 +5,13 @@ services:
       dockerfile: Dockerfile.test
     container_name: node-unit
     environment:
-      - NODE_ENV=test
+      - NODE_ENV=development
       - JWT_SECRET=unittestsecret
       - JWT_EXPIRES_IN=1h
     volumes:
       - ./coverage:/app/coverage
       - ./server:/app
-    command: ["npm", "run", "test:unit"]
+    command: sh -c "npm install --include=dev && npm run test:unit"
 
 networks:
   default:
