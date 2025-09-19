@@ -8,11 +8,8 @@
     "format:check": "prettier --check .",
     "lint": "eslint . --ext .ts,.js",
     "build": "tsc",
-    "start": "docker compose -f docker-compose.start.yml up --build -d",
-    "stop": "docker compose -f docker-compose.start.yml down",
-    "test": "docker compose -f docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from node-test",
+    "start:prod": "node dist/index.js",
     "test:ci": "jest --coverage --detectOpenHandles --forceExit",
-    "test:e2e:build": "docker compose -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from node-e2e-test",
     "test:e2e": "jest --config=jest.e2e.config.js --runInBand"
   },
   "license": "MIT",

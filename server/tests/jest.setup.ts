@@ -1,18 +1,16 @@
 import dotenv from "dotenv";
 import { Pool } from "pg";
 import Redis from "ioredis";
-
-// Carrega variáveis de ambiente
-dotenv.config({ path: ".env.test" });
+dotenv.config();
 
 beforeAll(async () => {
   // Conectar ao PostgreSQL
   global.pool = new Pool({
-    host: process.env.DB_HOST,
-    port: Number(process.env.DB_PORT || 5433),
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
+    host: process.env.POSTGRES_HOST,
+    port: Number(process.env.POSTGRES_PORT || 5433),
+    user: process.env.POSTGRES_USER,
+    password: process.env.POSTGRES_PASSWORD,
+    database: process.env.POSTGRES_DB,
   });
   await global.pool.query("SELECT 1");
 

@@ -2,40 +2,41 @@ services:
   postgres-app:
     image: postgres:17-alpine
     container_name: postgres-app
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 123
-      POSTGRES_DB: bdaula
+    restart: on-failure:5 # política de reinício com limite de 5 tentativas
+    env_file:
+      - ./.env.production
     ports:
       - "5433:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./src/configs/comandos.sql:/docker-entrypoint-initdb.d/comandos.sql:ro
+      - postgres_app_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - app-network
 
   redis-app:
     image: redis:8-alpine
     container_name: redis-app
-    restart: always
-    command: redis-server --requirepass 123
+    restart: on-failure:5
+    command: ["sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\""]
+    env_file:
+      - ./.env.production
     ports:
       - "6379:6379"
     volumes:
-      - redisdata:/data
+      - redis_app_data:/data
     networks:
       - app-network
 
   node-app:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ./server
+      dockerfile: Dockerfile.production
     container_name: node-app
+    restart: on-failure:5
     ports:
       - "3001:3000"
     env_file:
-      - .env
+      - ./.env.production
     depends_on:
       - postgres-app
       - redis-app
@@ -43,8 +44,8 @@ services:
       - app-network
 
 volumes:
-  pgdata:
-  redisdata:
+  postgres_app_data:
+  redis_app_data:
 
 networks:
   app-network:

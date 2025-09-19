@@ -1,52 +1,68 @@
 services:
   postgres-e2e:
     image: postgres:17-alpine
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 123
-      POSTGRES_DB: bdaula
-    ports:
-      - "5433:5432"
+    container_name: postgres-e2e
+    restart: on-failure:5
+    env_file:
+      - ./.env.e2e
     tmpfs:
       - /var/lib/postgresql/data
     volumes:
-      - ./src/configs/comandos.sql:/docker-entrypoint-initdb.d/comandos.sql:ro
+       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - e2e-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+      start_period: 5s
 
   redis-e2e:
     image: redis:8-alpine
-    command: redis-server --requirepass 123
-    ports:
-      - "6379:6379"
+    container_name: redis-e2e
+    restart: on-failure:5
+    command: ["sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\""]
+    env_file:
+      - ./.env.e2e
     networks:
       - e2e-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "$$REDIS_PASSWORD", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+      start_period: 2s
 
   node-e2e:
     build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "3001:3000"
+      context: ./server
+      dockerfile: Dockerfile.e2e
+    container_name: node-e2e
+    restart: on-failure:5
     env_file:
-      - .env.e2e
-    depends_on:
-      - postgres-e2e
-      - redis-e2e
+      - ./.env.e2e
     networks:
       - e2e-network
+    ports:
+      - "3002:3000"                     # expõe para você acessar fora do compose, se quiser
+    command: sh -c "node dist/index.js" # ou adicione "start:prod" no package.json e chame npm run start:prod
 
   node-e2e-test:
     build:
-      context: .
-      dockerfile: Dockerfile.e2e.test
+      context: ./server
+      dockerfile: Dockerfile.e2e
+    container_name: node-e2e-test
+    env_file:
+      - ./.env.e2e
     depends_on:
-      - node-e2e
+      node-e2e:
+        condition: service_started
     networks:
       - e2e-network
     volumes:
       - ./coverage:/app/coverage
-    command: sh -c "npx wait-on http://node-e2e:3000/health && npm run test:e2e"
+    command: sh -c "npx wait-on tcp:postgres-e2e:5432 tcp:redis-e2e:6379 http://node-e2e:3000/health && npm run test:e2e"
 
 networks:
   e2e-network:

@@ -1,4 +1,4 @@
-name: CI (Docker)
+name: CI Pipeline
 
 on:
   push:
@@ -11,10 +11,39 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-test:
+  lint:
+    name: Lint & Prettier
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
 
+      - name: Instalar dependências
+        run: npm ci --prefix server
+
+      - name: Rodar ESLint
+        run: npm run lint --prefix server
+
+      - name: Verificar formatação (Prettier)
+        run: npm run format:check --prefix server
+
+  build:
+    name: Build TypeScript
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Instalar dependências
+        run: npm ci --prefix server
+
+      - name: Compilar código
+        run: npm run build --prefix server
+
+  integration-tests:
+    name: Testes de Integração
+    runs-on: ubuntu-latest
+    needs: [lint, build]
     steps:
       - name: Checkout do código
         uses: actions/checkout@v4
@@ -22,47 +51,43 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Lint e Prettier fora dos containers (mais rápido)
-      - name: Instalar dependências para lint e build
-        run: npm ci
-
-      - name: Rodar o Linter
-        run: npm run lint
-
-      - name: Verificar formatação (Prettier)
-        run: npm run format:check
-
-      - name: Compilar o código TypeScript
-        run: npm run build
-
-      # Testes de integração
-      - name: Rodar testes de integração (docker-compose.test.yml)
+      - name: Rodar testes de integração
         run: |
           docker compose -f docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from node-test
 
-      - name: Upload coverage report (integração)
+      - name: Upload coverage report (integration)
         if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-integration
           path: coverage
 
-      # Testes E2E
-      - name: Rodar testes E2E (docker-compose.e2e.yml)
+      - name: Derrubar containers
+        if: always()
+        run: docker compose -f docker-compose.test.yml down -v || true
+
+  e2e-tests:
+    name: Testes End-to-End
+    runs-on: ubuntu-latest
+    needs: [lint, build]
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Rodar testes E2E
         run: |
           docker compose -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from node-e2e-test
 
-      - name: Upload coverage report (E2E)
+      - name: Upload coverage report (e2e)
         if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-e2e
-          path:
-            coverage
+          path: coverage
 
-            # Derrubar containers (garantia)
-      - name: Derrubar containers de teste
+      - name: Derrubar containers
         if: always()
-        run: |
-          docker compose -f docker-compose.test.yml down -v || true
-          docker compose -f docker-compose.e2e.yml down -v || true
+        run: docker compose -f docker-compose.e2e.yml down -v || true

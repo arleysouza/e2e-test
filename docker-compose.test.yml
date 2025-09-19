@@ -2,29 +2,32 @@ services:
   postgres-test:
     image: postgres:17-alpine
     container_name: postgres-test
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 123
-      POSTGRES_DB: bdaula
+    restart: on-failure:5 # política de reinício com limite de 5 tentativas
+    env_file:
+      - ./.env.e2e
     tmpfs:
       - /var/lib/postgresql/data
     volumes:
-      - ./src/configs/comandos.sql:/docker-entrypoint-initdb.d/comandos.sql:ro
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - test-network
 
   redis-test:
     image: redis:8-alpine
     container_name: redis-test
-    restart: always
+    restart: on-failure:5
+    env_file:
+      - ./.env.test
     networks:
       - test-network
 
   node-test:
     build:
-      context: .
+      context: ./server
       dockerfile: Dockerfile.test
     container_name: node-test
+    env_file:
+      - ./.env.test
     depends_on:
       - postgres-test
       - redis-test
