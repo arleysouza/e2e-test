@@ -19,8 +19,6 @@ if (redisPassword) {
 
 const redisClient = new Redis(redisOptions);
 
-// Eventos de log (opcional)
-//redisClient.on("connect", () => console.log("Redis conectado com sucesso!"));
 redisClient.on("error", (err) => console.error("Erro no Redis:", err));
 
 export default redisClient;
