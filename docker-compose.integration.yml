@@ -4,7 +4,7 @@ services:
     container_name: postgres-test
     restart: on-failure:5 # política de reinício com limite de 5 tentativas
     env_file:
-      - ./.env.e2e
+      - ./.env.integration
     tmpfs:
       - /var/lib/postgresql/data
     volumes:
@@ -17,17 +17,17 @@ services:
     container_name: redis-test
     restart: on-failure:5
     env_file:
-      - ./.env.test
+      - ./.env.integration
     networks:
       - test-network
 
   node-test:
     build:
       context: ./server
-      dockerfile: Dockerfile.test
+      dockerfile: Dockerfile.integration
     container_name: node-test
     env_file:
-      - ./.env.test
+      - ./.env.integration
     depends_on:
       - postgres-test
       - redis-test

@@ -2,10 +2,10 @@ services:
   node-unit:
     build:
       context: ./server
-      dockerfile: Dockerfile.test
+      dockerfile: Dockerfile.unit
     container_name: node-unit
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=test
       - JWT_SECRET=unittestsecret
       - JWT_EXPIRES_IN=1h
     volumes:

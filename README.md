@@ -70,41 +70,53 @@ app/
 │   │   ├── types/               # Tipagem customizada
 │   │   ├── utils/               # Funções auxiliares (ex: JWT)
 │   │   └── index.ts             # Inicialização do servidor
-│   └── tests/                   # Casos de teste (isolados da aplicação)
-│       ├── e2e/
-│       │   ├── api.e2e.test.ts
-│       │   ├── infra.e2e.test.ts
-│       │   └── user.e2e.test.ts 
-│       ├── integrations/
-│       │   ├── controllers/         # Testes de controllers com Supertest
-│       │   │   └── user.controller.test.ts
-│       │   └── helpers/             # App de teste sem app.listen()
-│       ├── unit/
-│       │   ├── controllers/ 
-│       │   │   └── user.controller.test.ts
-│       │   ├── middlewares/ 
-│       │   │   ├── authMiddleware.test.ts
-│       │   │   ├── errorHandler.test.ts
-│       │   │   └── validateBody.test.ts
-│       │   ├── utils/ 
-│       │   │   └── jwt.test.ts
-│       │   ├── controllers/ 
-│       ├── jest.setup.ts
-│       └── jest.unit.setup.ts
+│   ├── tests/                   # Casos de teste (isolados da aplicação)
+│   │   ├── e2e/
+│   │   │   ├── api.e2e.test.ts
+│   │   │   ├── infra.e2e.test.ts
+│   │   │   └── user.e2e.test.ts 
+│   │   ├── integrations/
+│   │   │   ├── controllers/         # Testes de controllers com Supertest
+│   │   │   │   └── user.controller.test.ts
+│   │   │   └── helpers/             # App de teste sem app.listen()
+│   │   ├── unit/
+│   │   │   ├── controllers/ 
+│   │   │   │   └── user.controller.test.ts
+│   │   │   ├── middlewares/ 
+│   │   │   │   ├── authMiddleware.test.ts
+│   │   │   │   ├── errorHandler.test.ts
+│   │   │   │   └── validateBody.test.ts
+│   │   │   └── utils/ 
+│   │   │       └── jwt.test.ts
+│   │   │    
+│   │   ├── jest.setup.ts
+│   │   └── jest.unit.setup.ts
+│   │
+│   ├── Dockerfile.e2e
+│   ├── Dockerfile.integration
+│   ├── Dockerfile.production
+│   ├── Dockerfile.unit
+│   ├── jest.config.js
+│   ├── jest.e2e.config.js
+│   ├── jest.unit.config.js
+│   └── package.json
 │
 ├── .dockerignore
 ├── .env.e2e
+├── .env.integration
 ├── .env.production
-├── .env.test
 ├── docker-compose.e2e.yml
-├── docker-compose.start.yml
-└── docker-compose.test.yml
+├── docker-compose.integration.yml
+├── docker-compose.production.yml
+└── docker-compose.unit.yml
 
 ```
+
 
 ---
 
 ### ▶️ Execução Local
+
 
 1. Clonar o repositório e instalar dependências:
 
@@ -115,11 +127,11 @@ cd app
 
 2. Subir containers para rodar a aplicação em modo de produção:
 ```bash
-docker compose -f docker-compose.start.yml up --build -d
+docker compose -f docker-compose.production.yml up --build -d
 ```
 Encerrar e remover containers:
 ```bash
-docker compose -f docker-compose.start.yml down -v
+docker compose -f docker-compose.production.yml down -v
 ```
 O arquivo `/http/requests.http` contém as requisições da aplicação (login, registro, logout, change password).
 Para executá-las diretamente no VSCode, instale a extensão:
@@ -145,11 +157,11 @@ docker compose -f docker-compose.unit.yml down -v
 
 5. Rodar testes de integração:
 ```bash
-docker compose -f docker-compose.test.yml up --build -d
+docker compose -f docker-compose.integration.yml up --build -d
 ```
 Encerrar e remover containers:
 ```bash
-docker compose -f docker-compose.test.yml down -v
+docker compose -f docker-compose.integration.yml down -v
 ```
 
 6. Rodar testes end-to-end:
@@ -171,7 +183,7 @@ O pipeline definido em `.github/workflows/ci.yml` executa quatro jobs principais
 1. **Lint & Prettier** – garante qualidade e formatação do código.
 2. **Build** – compila o TypeScript.
 3. **Unit Tests** – roda com `docker-compose.unit.yml`, usando apenas Node.js (sem Postgres/Redis).
-4. **Integration Tests** – roda com `docker-compose.test.yml`, usando Postgres e Redis efêmeros.
+4. **Integration Tests** – roda com `docker-compose.integration.yml`, usando Postgres e Redis efêmeros.
 5. **E2E Tests** – roda com `docker-compose.e2e.yml`, simulando fluxos completos de negócio.
 
 Cada etapa publica seu relatório de cobertura (`coverage/`) como artefato no GitHub Actions.
