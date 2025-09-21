@@ -75,7 +75,7 @@ app/
 │   │   │   ├── api.e2e.test.ts
 │   │   │   ├── infra.e2e.test.ts
 │   │   │   └── user.e2e.test.ts 
-│   │   ├── integrations/
+│   │   ├── integration/
 │   │   │   ├── controllers/         # Testes de controllers com Supertest
 │   │   │   │   └── user.controller.test.ts
 │   │   │   └── helpers/             # App de teste sem app.listen()
@@ -89,14 +89,14 @@ app/
 │   │   │   └── utils/ 
 │   │   │       └── jwt.test.ts
 │   │   │    
-│   │   ├── jest.setup.ts
+│   │   ├── jest.integration.setup.ts
 │   │   └── jest.unit.setup.ts
 │   │
 │   ├── Dockerfile.e2e
 │   ├── Dockerfile.integration
 │   ├── Dockerfile.production
 │   ├── Dockerfile.unit
-│   ├── jest.config.js
+│   ├── jest.integration.config.js
 │   ├── jest.e2e.config.js
 │   ├── jest.unit.config.js
 │   └── package.json
@@ -171,6 +171,96 @@ docker compose -f docker-compose.e2e.yml up --build -d
 Encerrar e remover containers:
 ```bash
 docker compose -f docker-compose.e2e.yml down -v
+```
+
+
+---
+
+### Fluxo de Execução dos Testes
+
+Nosso projeto contém três camadas de testes: unit, integration e e2e. Cada uma possui responsabilidades, containers Docker e arquivos de configuração específicos.
+
+#### 1. Testes unitários
+
+Objetivo: validar funções isoladas, sem dependências externas.
+
+- Compose: `docker-compose.unit.yml`
+- Dockerfile: `server/Dockerfile.unit`
+- Script executado: `npm run test:unit`
+- Configuração Jest: `server/jest.unit.config.js`
+- Setup Jest: `server/tests/jest.unit.setup.ts`
+- Escopo dos testes: `server/tests/unit/**/*.test.ts`
+
+Os testes rodam apenas dentro de um container Node.js (`node-unit`).
+Como o objetivo é testar as funções isoladamente, os testes substituem as conexões com o Postgres e Redis por mocks.
+
+
+#### 2. Testes de integração 
+
+Objetivo: verificar se módulos diferentes funcionam corretamente em conjunto.
+
+- Compose: `docker-compose.integration.yml`
+- Dockerfile: `server/Dockerfile.integration`
+- Script executado: `npm run test:ci`
+- Configuração Jest: `server/jest.integration.config.js`
+- Setup Jest: `server/tests/jest.integration.setup.ts`
+- Escopo dos testes: `server/tests/integration/**/*.test.ts`
+
+Containers envolvidos:
+- `postgres-test`
+- `redis-test`
+- `node-test` (executa a suíte Jest)
+
+Aqui usamos Postgres e Redis reais, mas o servidor Express é instanciado diretamente em memória (`via helpers/testApp.ts`) sem abrir uma porta HTTP.
+
+
+#### 3. Testes end-to-end
+
+Objetivo: simular o comportamento do usuário final em um fluxo completo do sistema.
+
+- Compose: `docker-compose.e2e.yml`
+- Dockerfile: `server/Dockerfile.e2e`
+- Script executado: `npm run test:e2e`
+- Configuração Jest: `server/jest.e2e.config.js`
+- Setup Jest: `server/tests/jest.integration.setup.ts`
+- Escopo dos testes: `server/tests/e2e/**/*.test.ts`
+
+Containers envolvidos:
+- `postgres-e2e`
+- `redis-e2e`
+- `node-e2e` (servidor Express rodando em http://node-e2e:3000)
+- `node-e2e-test` (executa a suíte Jest, aguardando os serviços estarem prontos com wait-on)
+
+A principal diferença em relação aos testes de integração é que aqui os testes fazem requisições HTTP reais contra o servidor rodando no container `node-e2e`.
+
+
+#### 🔄 Diagrama do Fluxo de Testes
+
+```mermaid
+flowchart TD
+    A[Unit Tests] -->|docker-compose.unit.yml| B[Integration Tests]
+    B -->|docker-compose.integration.yml| C[E2E Tests]
+    
+    subgraph Unit
+      U1[Container: node-unit]
+      U2[Config: jest.unit.config.js]
+      U3[Tests: tests/unit/**/*.test.ts]
+      A --> U1 --> U2 --> U3
+    end
+
+    subgraph Integration
+      I1[Containers: postgres-test, redis-test, node-test]
+      I2[Config: jest.integration.config.js]
+      I3[Tests: tests/integration/**/*.test.ts]
+      B --> I1 --> I2 --> I3
+    end
+
+    subgraph E2E
+      E1[Containers: postgres-e2e, redis-e2e, node-e2e, node-e2e-test]
+      E2[Config: jest.e2e.config.js]
+      E3[Tests: tests/e2e/**/*.test.ts]
+      C --> E1 --> E2 --> E3
+    end
 ```
 
 
