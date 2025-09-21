@@ -14,7 +14,7 @@ POST http://localhost:3001/users
 Content-Type: application/json
 
 {
-  "username": "arley.souza",
+  "username": "jose.souza",
   "password": "123456" 
 }
 
@@ -38,6 +38,6 @@ Authorization: Bearer {{login.response.body.data.token}}
 Content-Type: application/json
 
 {
-  "oldPassword": "123456",
-  "newPassword": "123455"
+  "oldPassword": "123455",
+  "newPassword": "123456"
 }
