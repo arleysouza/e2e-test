@@ -29,7 +29,7 @@ Esses passos percorrem o sistema “de ponta a ponta”: desde a entrada HTTP at
 ### 📌 Objetivo
 
 - Mostrar boas práticas em testes unitários, de integração e de ponta a ponta.
-- Isolar os testes em pastas dedicadas (tests/unit, tests/integrations, tests/e2e).
+- Isolar os testes em pastas dedicadas (tests/unit, tests/integration, tests/e2e).
 - Configurar Postgres e Redis de forma efêmera com Docker para os testes de integração/E2E.
 - Validar fluxos de autenticação (login, logout, blacklist de tokens) de ponta a ponta.
 - Integrar o pipeline de testes ao GitHub Actions usando Docker Compose.
@@ -268,7 +268,7 @@ flowchart TD
 
 ### 🚀 Execução no GitHub Actions
 
-O pipeline definido em `.github/workflows/ci.yml` executa quatro jobs principais em paralelo/sequência:
+O pipeline definido em `.github/workflows/ci.yml` executa cinco jobs principais em paralelo/sequência:
 
 1. **Lint & Prettier** – garante qualidade e formatação do código.
 2. **Build** – compila o TypeScript.
